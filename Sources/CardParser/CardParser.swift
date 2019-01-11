@@ -9,7 +9,7 @@ import Foundation
 
 //MARK: - CardType
 
-enum CardType {
+public enum CardType {
     case amex
     case diners
     case discover
@@ -48,7 +48,7 @@ enum CardType {
         return ValidationRequirement(prefixes: prefix, lengths: length)
     }
 
-    var segmentGroupings: [Int] {
+    public var segmentGroupings: [Int] {
         switch self {
         case .amex:      return [4, 6, 5]
         case .diners:    return [4, 6, 4]
@@ -56,22 +56,22 @@ enum CardType {
         }
     }
 
-    var maxLength: Int {
+    public var maxLength: Int {
         return validationRequirements.lengths.max() ?? 16
     }
 
-    var cvvLength: Int {
+    public var cvvLength: Int {
         switch self {
         case .amex: return 4
         default: return 3
         }
     }
 
-    func isValid(_ accountNumber: String) -> Bool {
+    public func isValid(_ accountNumber: String) -> Bool {
         return validationRequirements.isValid(accountNumber) && CardType.luhnCheck(accountNumber)
     }
 
-    func isPrefixValid(_ accountNumber: String) -> Bool {
+    public func isPrefixValid(_ accountNumber: String) -> Bool {
         return validationRequirements.isPrefixValid(accountNumber)
     }
 
@@ -94,14 +94,14 @@ fileprivate extension CardType {
 
         func isLengthValid(_ accountNumber: String) -> Bool {
             guard lengths.count > 0 else { return true }
-            return lengths.contains { accountNumber.length == $0 }
+            return lengths.contains { accountNumber.count == $0 }
         }
     }
 
     // from: https://gist.github.com/cwagdev/635ce973e8e86da0403a
     static func luhnCheck(_ cardNumber: String) -> Bool {
         var sum = 0
-        let reversedCharacters = cardNumber.characters.reversed().map { String($0) }
+        let reversedCharacters = cardNumber.reversed().map { String($0) }
         for (idx, element) in reversedCharacters.enumerated() {
             guard let digit = Int(element) else { return false }
             switch ((idx % 2 == 1), digit) {
@@ -117,25 +117,15 @@ fileprivate extension CardType {
 
 //MARK: - CardState
 
-enum CardState {
+public enum CardState: Equatable {
     case identified(CardType)
     case indeterminate([CardType])
     case invalid
 }
 
-extension CardState: Equatable {}
-func ==(lhs: CardState, rhs: CardState) -> Bool {
-    switch (lhs, rhs) {
-    case (.invalid, .invalid): return true
-    case (let .indeterminate(cards1), let .indeterminate(cards2)): return cards1 == cards2
-    case (let .identified(card1), let .identified(card2)): return card1 == card2
-    default: return false
-    }
-}
-
 extension CardState {
 
-    init(fromNumber number: String) {
+    public init(fromNumber number: String) {
         if let card = CardType.allValues.first(where: { $0.isValid(number) }) {
             self = .identified(card)
         }
@@ -144,7 +134,7 @@ extension CardState {
         }
     }
 
-    init(fromPrefix prefix: String) {
+    public init(fromPrefix prefix: String) {
         let possibleTypes = CardType.allValues.filter { $0.isPrefixValid(prefix) }
         if possibleTypes.count >= 2 {
             self = .indeterminate(possibleTypes)
@@ -174,35 +164,23 @@ extension ClosedRange: PrefixContainable {
         guard let lower = lowerBound as? String, let upper = upperBound as? String else { return false }
 
         let trimmedRange: ClosedRange<String> = {
-            let length = text.length
-            let trimmedStart = lower.prefix(length)
-            let trimmedEnd = upper.prefix(length)
+            let length = text.count
+            let trimmedStart = String(lower.prefix(length))
+            let trimmedEnd = String(upper.prefix(length))
             return trimmedStart...trimmedEnd
         }()
 
-        let trimmedText = text.prefix(trimmedRange.lowerBound.characters.count)
+        let trimmedText = String(text.prefix(trimmedRange.lowerBound.count))
         return trimmedRange ~= trimmedText
     }
 
 }
 
 extension String: PrefixContainable {
-
+    
     func hasCommonPrefix(with text: String) -> Bool {
         return hasPrefix(text) || text.hasPrefix(self)
     }
-
-}
-
-fileprivate extension String {
-
-    func prefix(_ maxLength: Int) -> String {
-        return String(characters.prefix(maxLength))
-    }
-
-    var length: Int {
-        return characters.count
-    }
-
+    
 }
 
