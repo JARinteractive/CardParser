@@ -9,15 +9,13 @@ import Foundation
 
 //MARK: - CardType
 
-public enum CardType {
+public enum CardType: CaseIterable {
     case amex
     case diners
     case discover
     case jcb
     case masterCard
     case visa
-
-    static let allValues: [CardType] = [.visa, .masterCard, .amex, .diners, .discover, .jcb]
 
     private var validationRequirements: ValidationRequirement {
         let prefix: [PrefixContainable], length: [Int]
@@ -126,7 +124,7 @@ public enum CardState: Equatable {
 extension CardState {
 
     public init(fromNumber number: String) {
-        if let card = CardType.allValues.first(where: { $0.isValid(number) }) {
+        if let card = CardType.allCases.first(where: { $0.isValid(number) }) {
             self = .identified(card)
         }
         else {
@@ -135,7 +133,7 @@ extension CardState {
     }
 
     public init(fromPrefix prefix: String) {
-        let possibleTypes = CardType.allValues.filter { $0.isPrefixValid(prefix) }
+        let possibleTypes = CardType.allCases.filter { $0.isPrefixValid(prefix) }
         if possibleTypes.count >= 2 {
             self = .indeterminate(possibleTypes)
         }
